@@ -35,11 +35,12 @@ float baselineReducing = NAN;
 float lastCOIndex      = NAN;
 
 // Safety Thresholds
-const float CO2_WARN   = 1000.0;
-const float CO2_DANGER = 1500.0;
+const float CO2_WARN        = 1000.0;
+const float CO2_DANGER      = 1500.0;
+const float CO_INDEX_DANGER = 50.0;  
 
 // Timing Constants
-const unsigned long GAS_READ_INTERVAL        = 15000;
+const unsigned long GAS_READ_INTERVAL        = 5000;
 const unsigned long DISPLAY_UPDATE_INTERVAL  = 2000;
 unsigned long lastGasRead      = 0;
 unsigned long lastDisplayUpdate = 0;
@@ -99,15 +100,22 @@ void drawScreen(bool isDanger) {
     display.fillCircle(124, 32, 2, SSD1306_WHITE);
   }
 
-  // Status Logic
+  // Status Logic (Updated to include CO check)
   String statusText = "INIT...";
   bool invertColor = false; 
-
-  if (!isnan(lastCo2)) {
+  
+  // Check CO levels first (Higher Priority)
+  bool highCO = (!isnan(lastCOIndex) && lastCOIndex >= CO_INDEX_DANGER);
+  
+  if (highCO) {
+    statusText = "GAS ALERT!";
+    invertColor = true;
+  } 
+  else if (!isnan(lastCo2)) {
     if (lastCo2 < CO2_WARN) {
       statusText = "GOOD";
     } else if (lastCo2 < CO2_DANGER) {
-      statusText = "VENTILATE";
+      statusText = "BAD";
       invertColor = true;
     } else {
       statusText = "! DANGER !";
@@ -240,7 +248,9 @@ void loop() {
   if (now - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
     lastDisplayUpdate = now;
 
-    bool isDanger = (!isnan(lastCo2) && lastCo2 >= CO2_DANGER);
+    // Determine Danger State: High CO2 OR High CO Index
+    bool isDanger = (!isnan(lastCo2) && lastCo2 >= CO2_DANGER) || 
+                    (!isnan(lastCOIndex) && lastCOIndex >= CO_INDEX_DANGER);
 
     if (isDanger && !lastDangerState) {
       triggerAlarmOnce();
