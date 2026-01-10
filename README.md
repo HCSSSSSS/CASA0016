@@ -1,5 +1,4 @@
-# CASA0016
-Indoor Air Quality Monitoring System
+# CASA0016 Indoor Air Quality Monitoring System
 
 ## Project Overview
 
